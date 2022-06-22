@@ -3,14 +3,14 @@ import axios from "axios";
 import React, { Component, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 
-function Uploader() {
+function Uploader(props) {
     const api = axios.create({
         baseURL: "http://localhost:5000"
     })
     const onDrop = useCallback(acceptedFiles => {
         console.log(acceptedFiles);
         acceptedFiles.forEach(file => {
-            api.postForm("/board/sjxvup/files", {
+            api.postForm(`/board/${props.boardid}/files`, {
                 'upload': file
             });
         });

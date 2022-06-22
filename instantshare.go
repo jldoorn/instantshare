@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jldoorn/instantshare/internal/filestore"
 )
@@ -132,6 +133,7 @@ func main() {
 	router.StrictSlash(true)
 	server := NewFileServer()
 
+	c := handlers.CORS(handlers.AllowedMethods([]string{"GET", "DELETE", "PUT", "POST"}), handlers.AllowedOrigins([]string{"*"}))
 	os.RemoveAll("tmp")
 	os.Mkdir("tmp", os.ModePerm)
 
@@ -147,5 +149,5 @@ func main() {
 	router.HandleFunc("/board/{id}/files/{fid}", server.fileRemoveHandler).Methods("DELETE")
 	router.HandleFunc("/dummy", server.dummyHandler).Methods("GET")
 
-	http.ListenAndServe(":5000", router)
+	http.ListenAndServe(":5000", c(router))
 }
