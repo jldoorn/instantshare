@@ -147,5 +147,5 @@ func main() {
 	router.HandleFunc("/board/{id}/files/{fid}", server.fileRemoveHandler).Methods("DELETE")
 	router.HandleFunc("/dummy", server.dummyHandler).Methods("GET")
 
-	http.ListenAndServe(":3000", router)
+	http.ListenAndServe(":5000", router)
 }
