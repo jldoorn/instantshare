@@ -1,20 +1,20 @@
 import logo from './logo.svg';
-import './App.css';
+// import './App.css';
 import File from './components/File';
 import Dashboard from './components/Dashboard';
 import { Component } from 'react';
 import axios from 'axios';
 import Api from './Api';
+import { Button, Container, Form, InputGroup } from 'react-bootstrap';
+
 
 class App extends Component{
   constructor(props) {
     super(props);
     this.state = {
       board: null,
-      files: []
     };
     this.onNewBoard = this.onNewBoard.bind(this);
-    this.onRefresh = this.onRefresh.bind(this);
     this.onDeleteBoard = this.onDeleteBoard.bind(this);
   }
 
@@ -25,12 +25,7 @@ class App extends Component{
     });
   };
 
-  onRefresh() {
-    Api.get(`/board/${this.state.board.id}/files`).then((res) => {
-      this.setState({files: res.data})
-    })
-
-  }
+  
   onDeleteBoard() {
     Api.delete(`/board/${this.state.board.id}`).then((res)=> {
       this.setState({board: null, files: []})
@@ -40,13 +35,22 @@ class App extends Component{
   render() {
     return (
     <div className="App">
-      <header className="App-header">
-        
-        <button onClick={this.onRefresh}>Refresh</button>
-        <button onClick={this.onNewBoard}>New Board</button>
-        <button onClick={this.onDeleteBoard}>Delete Board</button>
-        {this.state.board && <Dashboard boardname={this.state.board.name} boardid={this.state.board.id} files={this.state.files}/> }
-      </header>
+      <Container>
+        {!this.state.board && <Button variant="primary" onClick={this.onNewBoard}>New Board</Button>}
+        {!this.state.board && 
+          <Form>
+          <Form.Group className="mb-3" controlId="formBoardID">
+            <Form.Label>Board ID</Form.Label>
+            <Form.Control type="text" placeholder="Board ID" />
+          </Form.Group>
+          <Button variant="primary" type="submit">
+            Submit
+          </Button>
+        </Form>
+        }
+        {this.state.board && <Button variant="primary" onClick={this.onDeleteBoard}>Delete Board</Button>}
+        {this.state.board && <Dashboard obj={this.state.board} files={this.state.files}/> }
+      </Container>
       
     </div>
   );
