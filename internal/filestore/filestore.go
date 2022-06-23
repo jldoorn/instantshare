@@ -5,6 +5,7 @@ import (
 	"io"
 	"math/big"
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -53,6 +54,10 @@ func (fs *DiskFileStore) GetAllFiles(store FileBoard) []StoredFile {
 	for _, v := range fs.fileLibrary[store.Id] {
 		s = append(s, v)
 	}
+
+	sort.Slice(s, func(i, j int) bool {
+		return s[i].Id < s[j].Id
+	})
 
 	return s
 }
