@@ -56,6 +56,7 @@ class Dashboard extends React.Component {
             }
         }
         this.setState({socket: ws})
+        this.onRefresh()
     }
 
     onRefresh() {
