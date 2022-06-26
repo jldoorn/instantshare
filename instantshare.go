@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -12,11 +13,24 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jldoorn/instantshare/internal/filestore"
+	"github.com/jldoorn/wsnotifier"
 )
 
 type fileServer struct {
 	store filestore.FileStorer
 }
+
+const (
+	upload = iota
+	delete = iota
+)
+
+type Notification struct {
+	Status  int         `json:"status"`
+	Payload interface{} `json:"payload"`
+}
+
+var notifierPool *wsnotifier.NotifierPool
 
 func NewFileServer() *fileServer {
 	store := filestore.NewDiskStore()
@@ -63,11 +77,14 @@ func (fs *fileServer) boardCreateHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	notifierPool.AddBroadcast(store.Id)
 	renderJSON(w, store)
 }
 
 func (fs *fileServer) boardSubscribeHandler(w http.ResponseWriter, r *http.Request) {
-
+	id := mux.Vars(r)["id"]
+	fmt.Println("Subscribing a client to the board")
+	notifierPool.SubscribeClient(id, w, r)
 }
 
 func (fs *fileServer) boardAbandonHandler(w http.ResponseWriter, r *http.Request) {
@@ -78,6 +95,7 @@ func (fs *fileServer) boardAbandonHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	notifierPool.RemoveBroadcast(id)
 }
 
 func (fs *fileServer) fileSummaryHandler(w http.ResponseWriter, r *http.Request) {
@@ -87,16 +105,18 @@ func (fs *fileServer) fileSummaryHandler(w http.ResponseWriter, r *http.Request)
 
 func (fs *fileServer) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// for k := range r.MultipartForm.File
+	id := mux.Vars(r)["id"]
 	f, head, err := r.FormFile("upload")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sf, err := fs.store.UploadFile(filestore.FileBoard{Id: mux.Vars(r)["id"]}, head.Filename, f)
+	sf, err := fs.store.UploadFile(filestore.FileBoard{Id: id}, head.Filename, f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	notifierPool.BroadcastAt(id, Notification{Status: upload, Payload: sf})
 	renderJSON(w, sf)
 }
 
@@ -117,11 +137,14 @@ func (fs *fileServer) fileDownloadHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (fs *fileServer) fileRemoveHandler(w http.ResponseWriter, r *http.Request) {
-	err := fs.store.DeleteFile(filestore.FileBoard{Id: mux.Vars(r)["id"]}, mux.Vars(r)["fid"])
+	id := mux.Vars(r)["id"]
+	fid := mux.Vars(r)["fid"]
+	err := fs.store.DeleteFile(filestore.FileBoard{Id: id}, fid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	notifierPool.BroadcastAt(id, Notification{Status: delete, Payload: fid})
 }
 
 func (fs *fileServer) boardListHandler(w http.ResponseWriter, r *http.Request) {
@@ -132,6 +155,7 @@ func main() {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	server := NewFileServer()
+	notifierPool = wsnotifier.NewNotifierPool()
 
 	c := handlers.CORS(handlers.AllowedMethods([]string{"GET", "DELETE", "PUT", "POST"}), handlers.AllowedOrigins([]string{"*"}))
 	os.RemoveAll("tmp")
