@@ -30,13 +30,24 @@ class App extends Component{
   
   onDeleteBoard() {
     Api.delete(`/board/${this.state.board.id}`).then((res)=> {
-      this.setState({board: null, files: []})
+      this.setState({board: null, files: [], boardIdEntry: ""})
     })
   }
 
   handleManualEntry(event) {
     event.preventDefault();
-    this.setState({board: {id: this.state.boardIdEntry}})
+    if (this.state.boardIdEntry.length == 0) {
+      alert('enter an id')
+      return
+    }
+    Api.get(`/board/${this.state.boardIdEntry}`).then((res) => {
+      if (res.status < 400) {
+        this.setState({board: {id: this.state.boardIdEntry}})
+      } else {
+        alert("no board found with that id")
+      }
+    }).catch(() => {alert("no board found with that id")})
+    
   }
 
   render() {
@@ -56,7 +67,7 @@ class App extends Component{
         </Form>
         }
         {this.state.board && <Button variant="primary" onClick={this.onDeleteBoard}>Delete Board</Button>}
-        {this.state.board && <Dashboard obj={this.state.board} files={this.state.files}/> }
+        {this.state.board && <Dashboard obj={this.state.board} destroy={() => {this.setState({board: null, files: []})}} files={this.state.files}/> }
       </Container>
       
     </div>

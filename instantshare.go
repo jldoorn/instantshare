@@ -21,8 +21,9 @@ type fileServer struct {
 }
 
 const (
-	upload = iota
-	delete = iota
+	upload  = iota
+	delete  = iota
+	destroy = iota
 )
 
 type Notification struct {
@@ -90,11 +91,14 @@ func (fs *fileServer) boardSubscribeHandler(w http.ResponseWriter, r *http.Reque
 func (fs *fileServer) boardAbandonHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
-	err := fs.store.RemoveBoard(filestore.FileBoard{Id: id})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if fs.store.BoardExists(id) {
+		err := fs.store.RemoveBoard(filestore.FileBoard{Id: id})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
+	notifierPool.BroadcastAt(id, Notification{Status: destroy, Payload: "destroying"})
 	notifierPool.RemoveBroadcast(id)
 }
 
@@ -151,6 +155,17 @@ func (fs *fileServer) boardListHandler(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, fs.store.GetBoards())
 }
 
+func (fs *fileServer) boardExistsHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	if fs.store.BoardExists(id) {
+		renderJSON(w, fs.store.GetBoard(id))
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+		renderJSON(w, Notification{Status: http.StatusNotFound, Payload: "error no board found"})
+	}
+}
+
 func main() {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
@@ -166,6 +181,7 @@ func main() {
 	router.HandleFunc("/board", server.boardCreateHandler).Methods("POST")
 	router.HandleFunc("/board/{id}/subscribe", server.boardSubscribeHandler).Methods("GET")
 	router.HandleFunc("/board/{id}", server.boardAbandonHandler).Methods("DELETE")
+	router.HandleFunc("/board/{id}", server.boardExistsHandler).Methods("GET")
 
 	router.HandleFunc("/board/{id}/files", server.fileSummaryHandler).Methods("GET")
 	router.HandleFunc("/board/{id}/files", server.fileUploadHandler).Methods("POST")

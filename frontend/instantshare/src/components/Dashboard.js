@@ -53,6 +53,8 @@ class Dashboard extends React.Component {
                     files: newFiles
                 })
                 console.log(data)
+            } else if (data.status == 2) {
+                this.props.destroy()
             }
         }
         this.setState({socket: ws})

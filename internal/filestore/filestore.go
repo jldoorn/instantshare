@@ -20,6 +20,8 @@ type FileStorer interface {
 	RemoveBoard(store FileBoard) error
 	GetFileName(store FileBoard, id string) string
 	GetBoards() []FileBoard
+	BoardExists(id string) bool
+	GetBoard(id string) FileBoard
 }
 
 type DiskFileStore struct {
@@ -47,6 +49,20 @@ func (fs *DiskFileStore) lookupFile(store FileBoard, id string) (StoredFile, err
 
 func (fs *DiskFileStore) GetFileName(store FileBoard, id string) string {
 	return fs.fileLibrary[store.Id][id].Name
+}
+
+func (fs *DiskFileStore) BoardExists(id string) bool {
+	_, ok := fs.fileLibrary[id]
+
+	return ok
+}
+
+func (fs *DiskFileStore) GetBoard(id string) FileBoard {
+	if fs.BoardExists(id) {
+		return FileBoard{Id: id}
+	} else {
+		return FileBoard{}
+	}
 }
 
 func (fs *DiskFileStore) GetAllFiles(store FileBoard) []StoredFile {
