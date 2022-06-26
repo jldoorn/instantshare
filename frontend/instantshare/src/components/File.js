@@ -18,8 +18,8 @@ class File extends React.Component {
                     <CloseButton onClick={this.deleteFile}/>
                 </Card.Header>
                 <Card.Body>
-                    <Card.Title>File</Card.Title>
-                    <Card.Text>{this.props.obj.name} {this.props.obj.id}</Card.Text>
+                    <Card.Title>{this.props.obj.name}</Card.Title>
+                    <Card.Text>{this.props.obj.id}</Card.Text>
                     <Button variant="primary" href={`http://localhost:5000/board/${this.props.boardid}/files/${this.props.obj.id}`}>Download</Button>
                 </Card.Body>
             </Card>

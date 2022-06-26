@@ -13,9 +13,11 @@ class App extends Component{
     super(props);
     this.state = {
       board: null,
+      boardIdEntry: ""
     };
     this.onNewBoard = this.onNewBoard.bind(this);
     this.onDeleteBoard = this.onDeleteBoard.bind(this);
+    this.handleManualEntry = this.handleManualEntry.bind(this);
   }
 
   onNewBoard() {
@@ -32,16 +34,21 @@ class App extends Component{
     })
   }
 
+  handleManualEntry(event) {
+    event.preventDefault();
+    this.setState({board: {id: this.state.boardIdEntry}})
+  }
+
   render() {
     return (
     <div className="App">
       <Container>
         {!this.state.board && <Button variant="primary" onClick={this.onNewBoard}>New Board</Button>}
         {!this.state.board && 
-          <Form>
+          <Form onSubmit={this.handleManualEntry}>
           <Form.Group className="mb-3" controlId="formBoardID">
             <Form.Label>Board ID</Form.Label>
-            <Form.Control type="text" placeholder="Board ID" />
+            <Form.Control type="text" value={this.state.boardIdEntry} onChange={(e) => this.setState({boardIdEntry: e.target.value})} placeholder="Board ID" />
           </Form.Group>
           <Button variant="primary" type="submit">
             Submit
