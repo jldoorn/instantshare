@@ -12,7 +12,7 @@ class Dashboard extends React.Component {
                 // {id: '2', name: 'test2'},
                 // {id: '3', name: 'test3'},
               ],
-            socket: null
+            socket: new WebSocket(`ws://localhost:5000/board/${this.props.obj.id}/subscribe`)
         }
 
         console.log("constructing")
@@ -23,8 +23,7 @@ class Dashboard extends React.Component {
     }
 
     onOpen() {
-        const ws = new WebSocket(`ws://localhost:5000/board/${this.props.obj.id}/subscribe`)
-        ws.onmessage = (msg) => {
+        this.state.socket.onmessage = (msg) => {
             let data = JSON.parse(msg.data)
             if (data.status == 0) {
                 // file uploaded
@@ -43,10 +42,6 @@ class Dashboard extends React.Component {
                 this.props.destroy()
             }
         }
-        ws.onclose = () => {
-            this.onOpen()
-        }
-        this.setState({socket: ws})
         this.onRefresh()
     }
 
@@ -63,6 +58,19 @@ class Dashboard extends React.Component {
                 
             })
     }
+    componentDidUpdate() {
+        console.log("updating")
+    }
+    componentWillUnmount() {
+        this.state.socket.onclose = null
+        this.state.socket.close()
+    }
+
+    // restoreConnection() {
+    //     console.log("restoring connection")
+    //     this.setState({socket: new WebSocket(`ws://localhost:5000/board/${this.props.obj.id}/subscribe`)})
+    //     this.onOpen()
+    // }
 
     render() {
         return (
