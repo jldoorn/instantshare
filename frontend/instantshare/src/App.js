@@ -6,7 +6,8 @@ import { Component } from 'react';
 import axios from 'axios';
 import Api from './Api';
 import { Button, Container, Form, InputGroup } from 'react-bootstrap';
-
+import {ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 class App extends Component{
   constructor(props) {
@@ -69,7 +70,7 @@ class App extends Component{
         {this.state.board && <Button variant="primary" onClick={this.onDeleteBoard}>Delete Board</Button>}
         {this.state.board && <Dashboard obj={this.state.board} destroy={() => {this.setState({board: null, files: []})}} files={this.state.files}/> }
       </Container>
-      
+      <ToastContainer />
     </div>
   );
     }

@@ -19,21 +19,7 @@ class Dashboard extends React.Component {
         this.deleteFile = this.deleteFile.bind(this)
         this.onRefresh = this.onRefresh.bind(this)
         this.onOpen = this.onOpen.bind(this)
-        this.onOpen()
-        // let ws = new WebSocket(`ws://localhost:5000/board/${this.props.obj.id}/subscribe`)
-        // ws.onmessage = (msg) => {
-        //     let data = JSON.parse(msg.data)
-        //     if (data.status == 0) {
-        //         // file uploaded
-        //         console.log(data)
-        //         this.setState({files: this.state.files.push(data.payload)})
-        //     } else if (data.status == 1) {
-        //         // file deleted
-        //         this.deleteFile(data.payload)
-        //     }
-        // }
-
-        
+        this.onOpen()        
     }
 
     onOpen() {
@@ -56,6 +42,9 @@ class Dashboard extends React.Component {
             } else if (data.status == 2) {
                 this.props.destroy()
             }
+        }
+        ws.onclose = () => {
+            this.onOpen()
         }
         this.setState({socket: ws})
         this.onRefresh()
