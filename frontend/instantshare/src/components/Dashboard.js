@@ -51,15 +51,11 @@ class Dashboard extends React.Component {
         })
     
       }
-
     deleteFile(id) {
         Api.delete(`/board/${this.props.obj.id}/files/${id}`)
             .then((res) => {
                 
             })
-    }
-    componentDidUpdate() {
-        console.log("updating")
     }
     componentWillUnmount() {
         this.state.socket.onclose = null
