@@ -1,6 +1,5 @@
-import { type } from "@testing-library/user-event/dist/type";
-import React, { useRef } from "react";
-import { Button, Card, CloseButton, Toast } from "react-bootstrap";
+import React from "react";
+import { Button, Card, CloseButton } from "react-bootstrap";
 import { toast } from "react-toastify";
 import Api from "../Api";
 

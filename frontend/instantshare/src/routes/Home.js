@@ -1,7 +1,6 @@
-import { Input } from "@geist-ui/core";
 import {React, useState} from "react";
 import Api from "../Api";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Container, Button, Row, Col, Form, InputGroup, FormControl} from "react-bootstrap";
 
 function onNewBoard(nav) {
@@ -20,12 +19,7 @@ function Home(props) {
         evt.preventDefault();
         nav(`/board/${boardIdValue}`)
     }
-    return (
-        // <Container >
-
-        //     <h1>Home page</h1>
-        // </Container>
-        
+    return (      
 
         <Container>
             <h1>Instantshare</h1>
