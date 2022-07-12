@@ -31,7 +31,6 @@ class Dashboard extends React.Component {
                 this.onRefresh()
             } else if (data.status == 1) {
                 // file deleted
-                // this.deleteFile(data.payload)
                 const newFiles = this.state.files.filter(obj => obj.id !== data.payload)
 
                 this.setState({
@@ -39,6 +38,7 @@ class Dashboard extends React.Component {
                 })
                 console.log(data)
             } else if (data.status == 2) {
+                console.log(data)
                 this.props.destroy()
             }
         }
@@ -62,18 +62,12 @@ class Dashboard extends React.Component {
         this.state.socket.close()
     }
 
-    // restoreConnection() {
-    //     console.log("restoring connection")
-    //     this.setState({socket: new WebSocket(`ws://localhost:5000/board/${this.props.obj.id}/subscribe`)})
-    //     this.onOpen()
-    // }
-
     render() {
         return (
             <Container>
                 <Button variant="secondary" onClick={this.onRefresh}>Refresh</Button>
                 <h1>{this.props.obj.name}</h1>
-                <p>Link: {window.location.href}board/{this.props.obj.id}</p>
+                <p>Link: {window.location.href}</p>
                 <Container>
                     <Uploader boardid={this.props.obj.id}></Uploader>
                 </Container>

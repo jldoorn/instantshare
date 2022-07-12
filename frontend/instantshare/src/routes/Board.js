@@ -8,7 +8,7 @@ import Api from '../Api'
 import { Button, Container, Form, InputGroup } from 'react-bootstrap';
 import {ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useParams } from "react-router-dom";
+import { Router, useParams, useNavigate } from "react-router-dom";
 
 // class Board extends Component{
 //   constructor(props) {
@@ -51,28 +51,38 @@ import { useParams } from "react-router-dom";
 
 function Board() {
     const params = useParams();
+    const navigate = useNavigate();
     const [board, setBoard] = useState(null);
-    const [boardIdEntry, setBoardIdEntry] = useState(params.boardId)
+    // const [boardIdEntry, setBoardIdEntry] = useState(params.boardId)
 
-    useState(Api.get(`/board/${boardIdEntry}`).then((res) => {
-        if (res.status < 400) {
-          setBoard(res.data)
-        } else {
-          alert("no board found with that id")
-        }
-      }), [boardIdEntry])
+    useEffect( () => {
+      Api.get(`/board/${params.boardId}`).then((res) => {
+            if (res.status < 400) {
+              setBoard(res.data)
+            } else {
+              alert("no board found with that id")
+            }
+      }).catch(() => {alert("no board found with that id"); navigate("/")})
+    }, [params.boardId])
     
     const onDeleteBoard = () => {
         Api.delete(`/board/${board.id}`).then((res)=> {
           setBoard(null)
+          navigate("/")
         })
       }
+
+    const onBoardDestroyed = () => {
+      setBoard(null)
+      alert("the board you were using was deleted by another user");
+      navigate("/")
+    }
 
       return (
         <div className="App">
           <Container>
             {board && <Button variant="primary" onClick={onDeleteBoard}>Delete Board</Button>}
-            {board && <Dashboard obj={board} destroy={() => {setBoard(null)}}/> }
+            {board && <Dashboard obj={board} destroy={onBoardDestroyed}/> }
           </Container>
           <ToastContainer />
         </div>
