@@ -40,8 +40,7 @@ function Board() {
       return (
         <div className="App">
           <Container>
-            {board && <Button variant="primary" onClick={onDeleteBoard}>Delete Board</Button>}
-            {board && <Dashboard obj={board} destroy={onBoardDestroyed}/> }
+            {board && <Dashboard obj={board} onDeleteBoard={onDeleteBoard} destroy={onBoardDestroyed}/> }
           </Container>
           <ToastContainer />
         </div>

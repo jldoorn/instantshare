@@ -22,7 +22,6 @@ function Home(props) {
     return (      
 
         <Container>
-            <h1>Instantshare</h1>
             <Row>
                 <Col>
                     <Button variant="primary" onClick={() => {onNewBoard(nav)}}>Create Board</Button>
@@ -33,7 +32,7 @@ function Home(props) {
                     <Form onSubmit={handleSubmit}>
                         <InputGroup className="mb-3">
                             <InputGroup.Text id="join-entry-addon">
-                            http://instantshare.doorn.us/board/
+                            {window.location.href}board/
                             </InputGroup.Text>
                             <FormControl id="join-entry" aria-describedby="join-entry-addon" value={boardIdValue} onChange={(evt) => {setBoardIdValue(evt.target.value)}} />
                         </InputGroup>
