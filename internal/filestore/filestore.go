@@ -3,6 +3,7 @@ package filestore
 import (
 	"crypto/rand"
 	"io"
+	"io/fs"
 	"math/big"
 	"os"
 	"sort"
@@ -13,7 +14,7 @@ import (
 
 type FileStorer interface {
 	GetAllFiles(store FileBoard) []StoredFile
-	GetSingleFile(store FileBoard, id string) (*os.File, error)
+	GetSingleFile(store FileBoard, id string) (fs.File, error)
 	UploadFile(store FileBoard, name string, uploadData io.Reader) (StoredFile, error)
 	DeleteFile(store FileBoard, id string) error
 	CreateNewBoard() (FileBoard, error)
@@ -78,7 +79,7 @@ func (fs *DiskFileStore) GetAllFiles(store FileBoard) []StoredFile {
 	return s
 }
 
-func (fs *DiskFileStore) GetSingleFile(store FileBoard, id string) (*os.File, error) {
+func (fs *DiskFileStore) GetSingleFile(store FileBoard, id string) (fs.File, error) {
 	// better to call function with an io Writer?
 
 	sf, err := fs.lookupFile(store, id)

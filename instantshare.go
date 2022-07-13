@@ -34,7 +34,10 @@ type Notification struct {
 var notifierPool *wsnotifier.NotifierPool
 
 func NewFileServer() *fileServer {
-	store := filestore.NewDiskStore()
+	store, err := filestore.NewAwsStore()
+	if err != nil {
+		return nil
+	}
 	return &fileServer{store: store}
 }
 
@@ -95,11 +98,10 @@ func (fs *fileServer) boardAbandonHandler(w http.ResponseWriter, r *http.Request
 		err := fs.store.RemoveBoard(filestore.FileBoard{Id: id})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
+		notifierPool.BroadcastAt(id, Notification{Status: destroy, Payload: "destroying"})
+		notifierPool.RemoveBroadcast(id)
 	}
-	notifierPool.BroadcastAt(id, Notification{Status: destroy, Payload: "destroying"})
-	notifierPool.RemoveBroadcast(id)
 }
 
 func (fs *fileServer) fileSummaryHandler(w http.ResponseWriter, r *http.Request) {
@@ -132,6 +134,7 @@ func (fs *fileServer) fileDownloadHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer f.Close()
 	stat, err := f.Stat()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
