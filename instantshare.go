@@ -17,13 +17,15 @@ import (
 )
 
 type fileServer struct {
-	store filestore.FileStorer
+	store        filestore.FileStorer
+	notifierPool *wsnotifier.NotifierPool
+	destroyer    map[string]chan bool
 }
 
 const (
-	upload  = iota
-	delete  = iota
-	destroy = iota
+	uploadFile   = iota
+	deleteFile   = iota
+	destroyBoard = iota
 )
 
 type Notification struct {
@@ -31,14 +33,13 @@ type Notification struct {
 	Payload interface{} `json:"payload"`
 }
 
-var notifierPool *wsnotifier.NotifierPool
-
 func NewFileServer() *fileServer {
 	store, err := filestore.NewAwsStore()
 	if err != nil {
 		return nil
 	}
-	return &fileServer{store: store}
+	notifier := wsnotifier.NewNotifierPool()
+	return &fileServer{store: store, notifierPool: notifier, destroyer: make(map[string]chan bool)}
 }
 
 func renderJSON(w http.ResponseWriter, v interface{}) {
@@ -58,6 +59,20 @@ func sendFile(w http.ResponseWriter, r io.Reader, filename string, length int64)
 	h.Add("Content-Type", mime.TypeByExtension("."+fNameSplit[len(fNameSplit)-1]))
 	h.Add("Content-Length", strconv.Itoa(int(length)))
 	io.Copy(w, r)
+}
+
+func (fs *fileServer) cleanupBoard(id string) error {
+	fs.notifierPool.BroadcastAt(id, Notification{Status: destroyBoard, Payload: "destroying"})
+	fs.notifierPool.RemoveBroadcast(id)
+
+	fs.store.RemoveBoard(fs.store.GetBoard(id))
+	
+	close(fs.destroyer[id])
+	delete(fs.destroyer, id)
+
+	fmt.Println("Board deleted: ", id)
+
+	return nil
 }
 
 func (fs *fileServer) dummyHandler(w http.ResponseWriter, r *http.Request) {
@@ -81,26 +96,28 @@ func (fs *fileServer) boardCreateHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	notifierPool.AddBroadcast(store.Id)
+	fs.notifierPool.AddBroadcast(store.Id)
+	fs.destroyer[store.Id] = make(chan bool)
+	go func(toDestroy <-chan bool, id string) {
+		<-toDestroy
+		fs.cleanupBoard(id)
+	}(fs.destroyer[store.Id], store.Id)
 	renderJSON(w, store)
 }
 
 func (fs *fileServer) boardSubscribeHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	fmt.Println("Subscribing a client to the board")
-	notifierPool.SubscribeClient(id, w, r)
+	fs.notifierPool.SubscribeClient(id, w, r)
 }
 
 func (fs *fileServer) boardAbandonHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
 	if fs.store.BoardExists(id) {
-		err := fs.store.RemoveBoard(filestore.FileBoard{Id: id})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		notifierPool.BroadcastAt(id, Notification{Status: destroy, Payload: "destroying"})
-		notifierPool.RemoveBroadcast(id)
+		fs.destroyer[id] <- true
+	} else {
+		http.Error(w, "No board found", http.StatusNotFound)
 	}
 }
 
@@ -122,7 +139,7 @@ func (fs *fileServer) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	notifierPool.BroadcastAt(id, Notification{Status: upload, Payload: sf})
+	fs.notifierPool.BroadcastAt(id, Notification{Status: uploadFile, Payload: sf})
 	renderJSON(w, sf)
 }
 
@@ -151,7 +168,7 @@ func (fs *fileServer) fileRemoveHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	notifierPool.BroadcastAt(id, Notification{Status: delete, Payload: fid})
+	fs.notifierPool.BroadcastAt(id, Notification{Status: deleteFile, Payload: fid})
 }
 
 func (fs *fileServer) boardListHandler(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +190,6 @@ func main() {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	server := NewFileServer()
-	notifierPool = wsnotifier.NewNotifierPool()
 
 	c := handlers.CORS(handlers.AllowedMethods([]string{"GET", "DELETE", "PUT", "POST"}), handlers.AllowedOrigins([]string{"*"}))
 	os.RemoveAll("tmp")
