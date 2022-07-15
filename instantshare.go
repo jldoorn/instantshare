@@ -66,7 +66,7 @@ func (fs *fileServer) cleanupBoard(id string) error {
 	fs.notifierPool.RemoveBroadcast(id)
 
 	fs.store.RemoveBoard(fs.store.GetBoard(id))
-	
+
 	close(fs.destroyer[id])
 	delete(fs.destroyer, id)
 
@@ -96,8 +96,9 @@ func (fs *fileServer) boardCreateHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fs.notifierPool.AddBroadcast(store.Id)
 	fs.destroyer[store.Id] = make(chan bool)
+	fs.notifierPool.AddBroadcast(store.Id, fs.destroyer[store.Id])
+
 	go func(toDestroy <-chan bool, id string) {
 		<-toDestroy
 		fs.cleanupBoard(id)

@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/jldoorn/s3fs v0.0.2-alpha
-	github.com/jldoorn/wsnotifier v0.0.1-alpha
+	github.com/jldoorn/wsnotifier v0.1.0-alpha
 )
 
 require (

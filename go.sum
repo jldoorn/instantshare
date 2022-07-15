@@ -49,6 +49,8 @@ github.com/jldoorn/s3fs v0.0.2-alpha h1:4RqzkewhyLwfE2RwoTL8PPepgw/6dG+fF8tkH6ky
 github.com/jldoorn/s3fs v0.0.2-alpha/go.mod h1:XnuocqSNi20akVaWL7jtRJOukyA7g2Tjdw+92qJlNeA=
 github.com/jldoorn/wsnotifier v0.0.1-alpha h1:ORguQejbWaCsyzNdIb1C7RGycWam6L9uDwmguFIR63k=
 github.com/jldoorn/wsnotifier v0.0.1-alpha/go.mod h1:W6UaqbSeCjBpCOnCgvQ90rhIWnBpgrn7yIvbUbLzRew=
+github.com/jldoorn/wsnotifier v0.1.0-alpha h1:0yOwUSdNfvmdQxSuTL4buvZgH7FrIboCpnFFF09yq84=
+github.com/jldoorn/wsnotifier v0.1.0-alpha/go.mod h1:W6UaqbSeCjBpCOnCgvQ90rhIWnBpgrn7yIvbUbLzRew=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
