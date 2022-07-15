@@ -75,7 +75,10 @@ func (fs *fileServer) cleanupBoard(id string) error {
 	fs.store.RemoveBoard(fs.store.GetBoard(id))
 
 	close(fs.destroyer[id])
+	fs.boardTimers[id].Stop()
+
 	delete(fs.destroyer, id)
+	delete(fs.boardTimers, id)
 
 	fmt.Println("Board deleted: ", id)
 
