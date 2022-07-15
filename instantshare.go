@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -20,12 +21,14 @@ type fileServer struct {
 	store        filestore.FileStorer
 	notifierPool *wsnotifier.NotifierPool
 	destroyer    map[string]chan bool
+	boardTimers  map[string]*time.Timer
 }
 
 const (
-	uploadFile   = iota
-	deleteFile   = iota
-	destroyBoard = iota
+	uploadFile           = iota
+	deleteFile           = iota
+	destroyBoard         = iota
+	initialBoardDuration = 20 * time.Second
 )
 
 type Notification struct {
@@ -39,7 +42,11 @@ func NewFileServer() *fileServer {
 		return nil
 	}
 	notifier := wsnotifier.NewNotifierPool()
-	return &fileServer{store: store, notifierPool: notifier, destroyer: make(map[string]chan bool)}
+	return &fileServer{
+		store:        store,
+		notifierPool: notifier,
+		destroyer:    make(map[string]chan bool),
+		boardTimers:  make(map[string]*time.Timer)}
 }
 
 func renderJSON(w http.ResponseWriter, v interface{}) {
@@ -97,18 +104,26 @@ func (fs *fileServer) boardCreateHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	fs.destroyer[store.Id] = make(chan bool)
+	fs.boardTimers[store.Id] = time.NewTimer(initialBoardDuration)
 	fs.notifierPool.AddBroadcast(store.Id, fs.destroyer[store.Id])
 
-	go func(toDestroy <-chan bool, id string) {
-		<-toDestroy
+	go func(toDestroy <-chan bool, timerExpired <-chan time.Time, id string) {
+		select {
+		case <-toDestroy:
+			fmt.Println("board destroy called from somewhere")
+		case <-timerExpired:
+			fmt.Println("board timer expired, cleaning up")
+		}
 		fs.cleanupBoard(id)
-	}(fs.destroyer[store.Id], store.Id)
+	}(fs.destroyer[store.Id], fs.boardTimers[store.Id].C, store.Id)
 	renderJSON(w, store)
 }
 
 func (fs *fileServer) boardSubscribeHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	fmt.Println("Subscribing a client to the board")
+
+	fs.boardTimers[id].Reset(initialBoardDuration)
 	fs.notifierPool.SubscribeClient(id, w, r)
 }
 
@@ -123,13 +138,17 @@ func (fs *fileServer) boardAbandonHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (fs *fileServer) fileSummaryHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
 	summary := fs.store.GetAllFiles(filestore.FileBoard{Id: mux.Vars(r)["id"]})
+	fs.boardTimers[id].Reset(initialBoardDuration)
+
 	renderJSON(w, summary)
 }
 
 func (fs *fileServer) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// for k := range r.MultipartForm.File
 	id := mux.Vars(r)["id"]
+	// TODO Check if board exists
 	f, head, err := r.FormFile("upload")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -140,12 +159,14 @@ func (fs *fileServer) fileUploadHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fs.boardTimers[id].Reset(initialBoardDuration)
 	fs.notifierPool.BroadcastAt(id, Notification{Status: uploadFile, Payload: sf})
 	renderJSON(w, sf)
 }
 
 // Still need to test this
 func (fs *fileServer) fileDownloadHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
 	fname := fs.store.GetFileName(filestore.FileBoard{Id: mux.Vars(r)["id"]}, mux.Vars(r)["fid"])
 	f, err := fs.store.GetSingleFile(filestore.FileBoard{Id: mux.Vars(r)["id"]}, mux.Vars(r)["fid"])
 	if err != nil {
@@ -158,6 +179,7 @@ func (fs *fileServer) fileDownloadHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fs.boardTimers[id].Reset(initialBoardDuration)
 	sendFile(w, f, fname, stat.Size())
 }
 
@@ -169,6 +191,7 @@ func (fs *fileServer) fileRemoveHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fs.boardTimers[id].Reset(initialBoardDuration)
 	fs.notifierPool.BroadcastAt(id, Notification{Status: deleteFile, Payload: fid})
 }
 
